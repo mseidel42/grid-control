@@ -67,8 +67,16 @@ if [ "$HAS_RUNTIME" = "yes" ]; then
 	tar xvfz "$(_find cmssw-project-area.tar.gz)" || fail 111
 fi
 
-echo "Scram setup"
-$SCRAM setup
+#if [ "$SINGULARITY_SLC6" = "yes" ]; then
+#	echo "Singularity setup"
+#	cmssw-slc6
+#	export LC_ALL=C; unset LANGUAGE
+#fi
+
+if [ "$SCRAM_SETUP" = "yes" ]; then
+	echo "Scram setup"
+	$SCRAM setup
+fi
 
 echo "Setup CMSSW environment"
 eval $($SCRAM runtime -sh) || fail 112
@@ -164,7 +172,18 @@ if [ "$GC_CMSSWRUN_RETCODE" == "0" ] && [ -n "$CMSSW_CONFIG" ]; then
 
 		echo "Starting cmsRun..."
 		cp "$DBSDIR/config" "$CFG_BASENAME"
-		if [ "$GZIP_OUT" = "yes" ]; then
+		if [ "$SINGULARITY_SLC6" = "yes" ]; then
+			echo "Using singularity to run on SLC6..."
+			COMMAND='export LC_ALL=C; unset LANGUAGE; cat /etc/redhat-release; echo $PWD; cd CMSSW_BASE; echo $PWD; eval `scramv1 runtime -sh`; cd GC_WORKDIR; cmsRun -j "DBSDIR/report.xml" -e "CFG_BASENAME" PARAMS'
+			COMMAND=${COMMAND//CMSSW_BASE/${CMSSW_BASE}}
+			COMMAND=${COMMAND//GC_WORKDIR/${GC_WORKDIR}}
+			COMMAND=${COMMAND//DBSDIR/${DBSDIR}}
+			COMMAND=${COMMAND//CFG_BASENAME/${CFG_BASENAME}}
+			COMMAND=${COMMAND//PARAMS/$@}
+			echo $COMMAND
+			cmssw-slc6 --command-to-run $COMMAND
+			CODE=$?
+		elif [ "$GZIP_OUT" = "yes" ]; then
 			(
 				echo "Starting cmsRun with config file $CFG_NAME and arguments $@"
 				cmsRun -j "$DBSDIR/report.xml" -e "$CFG_BASENAME" $@

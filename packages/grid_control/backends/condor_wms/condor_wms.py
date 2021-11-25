@@ -14,7 +14,7 @@
 
 # -*- coding: utf-8 -*-
 
-import os, re, time, tempfile
+import os, re, time, tempfile, shutil
 from grid_control.backends.aspect_cancel import CancelAndPurgeJobs
 from grid_control.backends.aspect_status import CheckJobsMissingState
 from grid_control.backends.backend_tools import unpack_wildcard_tar
@@ -103,7 +103,7 @@ class Condor(BasicWMS):
 			return Result(wait_on_idle=20, wait_between_steps=5)
 
 	def submit_jobs(self, jobnum_list, task):
-		submit_chunk_size = 25
+		submit_chunk_size = 250
 		for chunk_pos in irange(0, len(jobnum_list), submit_chunk_size):
 			for result in self._submit_jobs(jobnum_list[chunk_pos:chunk_pos + submit_chunk_size], task):
 				yield result
@@ -231,6 +231,7 @@ class Condor(BasicWMS):
 			# remove a job when it exceeds the requested wall time
 			remove_cond += ' || ((JobStatus == 2) && (CurrentTime - EnteredCurrentStatus) > %s)' % task.wall_time
 		jdl_str_list.append('periodic_remove = (%s)' % remove_cond)
+		jdl_str_list.append('+AccountingGroup = "group_u_CMST3.all"')
 
 		if self._wall_time_mode != WallTimeMode.ignore:
 			jdl_str_list.append('max_job_retirement_time = %s' % task.wall_time)
@@ -477,6 +478,7 @@ class Condor(BasicWMS):
 	def _submit_jobs_prepare(self, jobnum_list, task):
 		activity = Activity('preparing jobs')
 		jdl_fn = self._write_jdl(jobnum_list, task)
+		shutil.copy2(jdl_fn, self._sandbox_dn)
 
 		# create the _jobconfig.sh file containing the actual data
 		for jobnum in jobnum_list:

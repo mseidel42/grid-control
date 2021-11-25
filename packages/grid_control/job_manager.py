@@ -46,9 +46,9 @@ class JobManager(NamedPlugin):  # pylint:disable=too-many-instance-attributes
 		self._njobs_inqueue = config.get_int('in queue', -1, on_change=None)
 
 		self._chunks_enabled = config.get_bool('chunks enabled', True, on_change=None)
-		self._chunks_submit = config.get_int('chunks submit', 100, on_change=None)
-		self._chunks_check = config.get_int('chunks check', 100, on_change=None)
-		self._chunks_retrieve = config.get_int('chunks retrieve', 100, on_change=None)
+		self._chunks_submit = config.get_int('chunks submit', 250, on_change=None)
+		self._chunks_check = config.get_int('chunks check', 250, on_change=None)
+		self._chunks_retrieve = config.get_int('chunks retrieve', 250, on_change=None)
 
 		self._timeout_unknown = config.get_time('unknown timeout', -1, on_change=None)
 		self._timeout_queue = config.get_time('queue timeout', -1, on_change=None)

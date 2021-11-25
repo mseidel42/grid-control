@@ -151,6 +151,9 @@ class CMSSW(SCRAMTask):
 		self._project_area_tarball_on_se = config.get_bool(['se runtime', 'se project area'], True)
 		self._project_area_tarball = config.get_work_path('cmssw-project-area.tar.gz')
 
+		self._scram_setup = config.get_bool('scram setup', False)
+		self._singularity_slc6 = config.get_bool('singularity slc6', False)
+
 		# Prolog / Epilog script support - warn about old syntax
 		self.prolog = TaskExecutableWrapper(config, 'prolog', '')
 		self.epilog = TaskExecutableWrapper(config, 'epilog', '')
@@ -206,6 +209,10 @@ class CMSSW(SCRAMTask):
 			job_env_dict['SE_RUNTIME'] = 'yes'
 		if self._project_area:
 			job_env_dict['HAS_RUNTIME'] = 'yes'
+		if self._scram_setup:
+			job_env_dict['SCRAM_SETUP'] = 'yes'
+		if self._singularity_slc6:
+			job_env_dict['SINGULARITY_SLC6'] = 'yes'
 		job_env_dict['CMSSW_EXEC'] = 'cmsRun'
 		job_env_dict['CMSSW_CONFIG'] = str.join(' ', imap(os.path.basename, self._config_fn_list))
 		job_env_dict['CMSSW_OLD_RELEASETOP'] = self._old_release_top
