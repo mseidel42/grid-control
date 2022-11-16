@@ -172,7 +172,7 @@ class CMSSW(SCRAMTask):
 		self._config_fn_list = self._process_config_file_list(config,
 			config.get_fn_list('config file', self._get_config_file_default()),
 			fragment, auto_prepare=config.get_bool('instrumentation', True),
-			must_prepare=self._has_dataset)
+			must_prepare=self._has_dataset, prepare_only_first=config.get_bool('instrument only first', False))
 
 		# Create project area tarball
 		if self._project_area and not os.path.exists(self._project_area_tarball):
@@ -252,7 +252,7 @@ class CMSSW(SCRAMTask):
 			return files + [('CMSSW tarball', self._project_area_tarball, self._task_id + '.tar.gz')]
 		return files
 
-	def _config_find_uninitialized(self, config, config_file_list, auto_prepare, must_prepare):
+	def _config_find_uninitialized(self, config, config_file_list, auto_prepare, must_prepare, prepare_only_first):
 		common_path = os.path.dirname(os.path.commonprefix(config_file_list))
 
 		config_file_list_todo = []
@@ -272,6 +272,9 @@ class CMSSW(SCRAMTask):
 				config_file_list_todo.append((cfg, cfg_new, do_prepare))
 			config_file_status_list.append({1: cfg.split(common_path, 1)[1].lstrip('/'), 2: cfg_new_exists,
 				3: is_instrumented, 4: do_prepare})
+			if prepare_only_first:
+				must_prepare = False
+				auto_prepare = False
 
 		if config_file_status_list:
 			config_file_status_header = [(1, 'Config file'), (2, 'Work dir'),
@@ -330,10 +333,10 @@ class CMSSW(SCRAMTask):
 		return result
 
 	def _process_config_file_list(self, config, config_file_list,
-			fragment_path, auto_prepare, must_prepare):
+			fragment_path, auto_prepare, must_prepare, prepare_only_first):
 		# process list of uninitialized config files
 		iter_uninitialized_config_files = self._config_find_uninitialized(config,
-			config_file_list, auto_prepare, must_prepare)
+			config_file_list, auto_prepare, must_prepare, prepare_only_first)
 		for (cfg, cfg_new, do_prepare) in iter_uninitialized_config_files:
 			ask_user_msg = 'Do you want to prepare %s for running over the dataset?' % cfg
 			if do_prepare and (auto_prepare or self._uii.prompt_bool(ask_user_msg, True)):
@@ -353,6 +356,8 @@ class CMSSW(SCRAMTask):
 			if auto_prepare and not is_instrumented:
 				self._log.warning('Config file %r was not instrumented!', cfg)
 			result.append(cfg_new)
+			if prepare_only_first:
+				must_prepare = False
 		return result
 
 
