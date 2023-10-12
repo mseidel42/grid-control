@@ -53,7 +53,8 @@ class CMSBaseProvider(DataProvider):
 			CMSLocationFormat, CMSLocationFormat.hostname)
 		self._sitedb = CRIC()
 		token = AccessToken.create_instance('VomsProxy', create_config(), 'token')
-		self._rucio = Client(account=self._sitedb.dn_to_username(token.get_fq_user_name()))
+		# self._rucio = Client(account=self._sitedb.dn_to_username(token.get_fq_user_name()))
+		self._rucio = Client(account='anpotreb')
 		dataset_expr_parts = split_opt(dataset_expr, '@#')
 		(self._dataset_path, self._dataset_instance, self._dataset_block_selector) = dataset_expr_parts
 		instance_default = dataset_config.get('dbs instance', '')
