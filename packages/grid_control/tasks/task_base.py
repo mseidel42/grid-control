@@ -85,7 +85,7 @@ class TaskModule(NamedPlugin):  # pylint:disable=too-many-instance-attributes
 
 		self._sb_in_fn_list = config.get_path_list('input files', [], on_change=init_sandbox)
 		self._sb_out_fn_list = config.get_list('output files', [], on_change=init_sandbox)
-		self._do_gzip_std_output = config.get_bool('gzip output', False, on_change=init_sandbox)
+		self._do_gzip_std_output = config.get_bool('gzip output', True, on_change=init_sandbox)
 
 		self._subst_files = config.get_list('subst files', [], on_change=init_sandbox)
 		self._dependencies = lmap(str.lower, config.get_list('depends', [], on_change=init_sandbox))

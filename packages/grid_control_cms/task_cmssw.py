@@ -166,10 +166,6 @@ class CMSSW(SCRAMTask):
 			self._needed_vn_set.add('MAX_EVENTS')
 		fragment = config.get_fn('instrumentation fragment',
 			get_path_share('fragmentForCMSSW.py', pkg='grid_control_cms'))
-		# fragment2 = config.get_fn('instrumentation fragment',
-		# 	get_path_share('fragmentForCMSSW_config_chain.py', pkg='grid_control_cms'))
-		# print("fragment = ", fragment)
-		# import pdb; pdb.set_trace()
 		self._config_fn_list = self._process_config_file_list(config,
 			config.get_fn_list('config file', self._get_config_file_default()),
 			fragment, auto_prepare=config.get_bool('instrumentation', True),
@@ -252,7 +248,7 @@ class CMSSW(SCRAMTask):
 
 	def _config_find_uninitialized(self, config, config_file_list, auto_prepare, must_prepare, instrument_only_first_fragment):
 		common_path = os.path.dirname(os.path.commonprefix(config_file_list))
-		# Set flag to True for first config file
+		# a flag to track if the config file is the first in the chain
 		first_config = True
 
 		config_file_list_todo = []
@@ -267,7 +263,6 @@ class CMSSW(SCRAMTask):
 				is_instrumented = self._config_is_instrumented(cfg)
 				do_copy = True
 			do_prepare = (must_prepare or auto_prepare) and not is_instrumented and first_config
-			# import pdb; pdb.set_trace()
 			do_copy = do_copy or do_prepare
 			if do_copy:
 				config_file_list_todo.append((cfg, cfg_new, do_prepare))
@@ -283,7 +278,6 @@ class CMSSW(SCRAMTask):
 
 	def _config_is_instrumented(self, fn):
 		cfg = SafeFile(fn).read_close()
-		# import pdb; pdb.set_trace()
 		for tag in self._needed_vn_set:
 			if (not '__%s__' % tag in cfg) and (not '@%s@' % tag in cfg):
 				return False
@@ -335,14 +329,9 @@ class CMSSW(SCRAMTask):
 	def _process_config_file_list(self, config, config_file_list,
 			fragment_path, auto_prepare, must_prepare, instrument_only_first_fragment):
 		# process list of uninitialized config files
-		# import pdb; pdb.set_trace()
 		iter_uninitialized_config_files = self._config_find_uninitialized(config,
 			config_file_list, auto_prepare, must_prepare, instrument_only_first_fragment)
-		# fragment = fragment_path
 		for (cfg, cfg_new, do_prepare) in iter_uninitialized_config_files:
-			# if first_config:
-			# 	fragment = fragment_chain_path
-			# 	first_config = False
 			ask_user_msg = 'Do you want to prepare %s for running over the dataset?' % cfg
 			if do_prepare and (auto_prepare or self._uii.prompt_bool(ask_user_msg, True)):
 				self._config_store_backup(cfg, cfg_new, fragment_path)
