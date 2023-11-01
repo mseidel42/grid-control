@@ -169,7 +169,8 @@ class CMSSW(SCRAMTask):
 		self._config_fn_list = self._process_config_file_list(config,
 			config.get_fn_list('config file', self._get_config_file_default()),
 			fragment, auto_prepare=config.get_bool('instrumentation', True),
-			must_prepare=self._has_dataset)
+			must_prepare=self._has_dataset,
+			instrument_only_first_fragment = config.get_bool('instrument_only_first_fragment', False),)
 
 		# Create project area tarball
 		if self._project_area and not os.path.exists(self._project_area_tarball):
@@ -245,8 +246,10 @@ class CMSSW(SCRAMTask):
 			return files + [('CMSSW tarball', self._project_area_tarball, self._task_id + '.tar.gz')]
 		return files
 
-	def _config_find_uninitialized(self, config, config_file_list, auto_prepare, must_prepare):
+	def _config_find_uninitialized(self, config, config_file_list, auto_prepare, must_prepare, instrument_only_first_fragment):
 		common_path = os.path.dirname(os.path.commonprefix(config_file_list))
+		# a flag to track if the config file is the first in the chain
+		first_config = True
 
 		config_file_list_todo = []
 		config_file_status_list = []
@@ -259,12 +262,13 @@ class CMSSW(SCRAMTask):
 			else:
 				is_instrumented = self._config_is_instrumented(cfg)
 				do_copy = True
-			do_prepare = (must_prepare or auto_prepare) and not is_instrumented
+			do_prepare = (must_prepare or auto_prepare) and not is_instrumented and first_config
 			do_copy = do_copy or do_prepare
 			if do_copy:
 				config_file_list_todo.append((cfg, cfg_new, do_prepare))
 			config_file_status_list.append({1: cfg.split(common_path, 1)[1].lstrip('/'), 2: cfg_new_exists,
 				3: is_instrumented, 4: do_prepare})
+			first_config = False or (not instrument_only_first_fragment)
 
 		if config_file_status_list:
 			config_file_status_header = [(1, 'Config file'), (2, 'Work dir'),
@@ -323,10 +327,10 @@ class CMSSW(SCRAMTask):
 		return result
 
 	def _process_config_file_list(self, config, config_file_list,
-			fragment_path, auto_prepare, must_prepare):
+			fragment_path, auto_prepare, must_prepare, instrument_only_first_fragment):
 		# process list of uninitialized config files
 		iter_uninitialized_config_files = self._config_find_uninitialized(config,
-			config_file_list, auto_prepare, must_prepare)
+			config_file_list, auto_prepare, must_prepare, instrument_only_first_fragment)
 		for (cfg, cfg_new, do_prepare) in iter_uninitialized_config_files:
 			ask_user_msg = 'Do you want to prepare %s for running over the dataset?' % cfg
 			if do_prepare and (auto_prepare or self._uii.prompt_bool(ask_user_msg, True)):
@@ -335,14 +339,16 @@ class CMSSW(SCRAMTask):
 				self._config_store_backup(cfg, cfg_new)
 
 		result = []
+		first_config = True
 		for cfg in config_file_list:
 			cfg_new = config.get_work_path(os.path.basename(cfg))
 			if not os.path.exists(cfg_new):
 				raise ConfigError('Config file %r was not copied to the work directory!' % cfg)
 			is_instrumented = self._config_is_instrumented(cfg_new)
-			if must_prepare and not is_instrumented:
+			if must_prepare and not is_instrumented and first_config:
 				raise ConfigError('Config file %r must use %s to work properly!' %
 					(cfg, str.join(', ', imap(lambda x: '@%s@' % x, sorted(self._needed_vn_set)))))
+			first_config = False or (not instrument_only_first_fragment)
 			if auto_prepare and not is_instrumented:
 				self._log.warning('Config file %r was not instrumented!', cfg)
 			result.append(cfg_new)
