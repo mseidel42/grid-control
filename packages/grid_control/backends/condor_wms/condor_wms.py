@@ -231,6 +231,7 @@ class Condor(BasicWMS):
 			# remove a job when it exceeds the requested wall time
 			remove_cond += ' || ((JobStatus == 2) && (CurrentTime - EnteredCurrentStatus) > %s)' % task.wall_time
 		jdl_str_list.append('periodic_remove = (%s)' % remove_cond)
+		jdl_str_list.append('MY.WantOS = "el7"')
 
 		if self._wall_time_mode != WallTimeMode.ignore:
 			jdl_str_list.append('max_job_retirement_time = %s' % task.wall_time)
